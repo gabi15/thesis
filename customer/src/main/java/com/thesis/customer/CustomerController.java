@@ -1,5 +1,7 @@
 package com.thesis.customer;
 
+import com.thesis.customer.dto.CredentialsDto;
+import com.thesis.customer.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,4 +31,16 @@ public record CustomerController(CustomerService customerService) {
     public ResponseEntity<List<Customer>> getAllCustomers(){
         return ResponseEntity.ok().body(customerService.getAllCustomers());
     }
+
+//    @PostMapping("/signIn")
+//    public ResponseEntity<UserDto> signIn(@RequestBody CredentialsDto credentialsDto) {
+//        log.info("Trying to login {}", credentialsDto.getLogin());
+//        return ResponseEntity.ok(customerService.signIn(credentialsDto));
+//    }
+//
+//    @PostMapping("/validateToken")
+//    public ResponseEntity<UserDto> signIn(@RequestParam String token) {
+//        log.info("Trying to validate token {}", token);
+//        return ResponseEntity.ok(customerService.validateToken(token));
+//    }
 }

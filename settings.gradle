@@ -6,4 +6,5 @@ include 'eureka-server'
 include 'authorization-service'
 include 'api-gateway'
 include 'invoice'
+include 'service-users'
 
