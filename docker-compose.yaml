@@ -1,4 +1,12 @@
 services:
+  db_invoice:
+    image: 'postgres:13.1-alpine'
+    container_name: db_invoice
+    environment:
+      - POSTGRES_USER=compose-postgres
+      - POSTGRES_PASSWORD=compose-postgres
+    ports:
+      - 5432:5432
   postgres:
     container_name: postgres
     image: postgres
