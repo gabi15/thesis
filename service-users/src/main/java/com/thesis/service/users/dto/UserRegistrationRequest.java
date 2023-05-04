@@ -9,10 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Data
-public class UserDto {
-
-    private long id;
+public class UserRegistrationRequest {
     private String login;
-    private String token;
-    private String fingerprintCookie;
+    private String password;
 }

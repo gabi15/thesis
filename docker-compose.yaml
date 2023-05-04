@@ -6,98 +6,64 @@ services:
       - POSTGRES_USER=compose-postgres
       - POSTGRES_PASSWORD=compose-postgres
     ports:
+      - 5433:5432
+
+  invoice_service:
+    image: demo/invoice:latest
+    build:
+      context: ./invoice
+    container_name: invoice
+    depends_on:
+      - db_invoice
+    environment:
+      - "SPRING_PROFILES_ACTIVE=dev"
+    ports:
+      - 8083:8083
+    volumes:
+      - invoices:/var/lib/invoices/data
+
+  db_user:
+    image: 'postgres:13.1-alpine'
+    container_name: db_user
+    environment:
+      - POSTGRES_USER=compose-postgres
+      - POSTGRES_PASSWORD=compose-postgres
+    ports:
       - 5432:5432
-  postgres:
-    container_name: postgres
-    image: postgres
+
+  users_service:
+    image: demo/service-users:latest
+    build:
+      context: ./service-users
+    container_name: service-users
+    depends_on:
+      - db_user
     environment:
-      POSTGRES_USER: amigoscode
-      POSTGRES_PASSWORD: password
-      PGDATA: /data/postgres
-    volumes:
-      - postgres:/data/postgres
+      - "SPRING_PROFILES_ACTIVE=dev"
     ports:
-      - "5432:5432"
-    networks:
-      - postgres
-    restart: unless-stopped
-  pgadmin:
-    container_name: pgadmin
-    image: dpage/pgadmin4
+      - 8081:8081
+
+  eureka-server:
+    image: demo/eureka-server:latest
+    container_name: eureka-server
+    build:
+      context: ./eureka-server
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    volumes:
-      - pgadmin:/var/lib/pgadmin
+      - "SPRING_PROFILES_ACTIVE=dev"
     ports:
-      - "5050:80"
-    networks:
-      - postgres
-    restart: unless-stopped
-  zipkin:
-    image: openzipkin/zipkin
-    container_name: zipkin
-    ports:
-      - "9411:9411"
-    networks:
-      - spring
-#  eureka-server:
-#    image: demo/eureka-server:latest
-#    container_name: eureka-server
-#    ports:
-#      - "8761:8761"
-#    environment:
-#      - SPRING_PROFILES_ACTIVE=docker
-#    networks:
-#      - spring
-#    depends_on:
-#      - zipkin
-  #  apigw:
-  #    image: amigoscode/apigw:latest
-  #    container_name: apigw
-  #    ports:
-  #      - "8083:8083"
-  #    environment:
-  #      - SPRING_PROFILES_ACTIVE=docker
-  #    networks:
-  #      - spring
-  #    depends_on:
-  #      - zipkin
-  #      - eureka-server
-  customer:
-    image: demo/customer:latest
-    container_name: customer
+      - "8761:8761"
+
+  api-gateway:
+    image: demo/api-gateway:latest
+    container_name: api-gateway
+    build:
+      context: ./api-gateway
+    environment:
+      - "SPRING_PROFILES_ACTIVE=dev"
     ports:
       - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-    networks:
-      - spring
-      - postgres
     depends_on:
-      - zipkin
-      - postgres
-  fraud:
-    image: demo/fraud:latest
-    container_name: fraud
-    ports:
-      - "8081:8081"
-#    environment:
-#      - SPRING_PROFILES_ACTIVE=docker
-#    networks:
-#      - spring
-#      - postgres
-#    depends_on:
-#      - zipkin
-#      - postgres
-
-networks:
-  postgres:
-    driver: bridge
-  spring:
-    driver: bridge
+      - eureka-server
 
 volumes:
-  postgres:
-  pgadmin:
+  invoices:
