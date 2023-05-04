@@ -25,7 +25,7 @@ import java.util.Optional;
 public class InvoiceService {
 
     private final FileDataRepository fileDataRepository;
-    private final String FOLDER_PATH = "C:/Users/Gabrysia/Invoices/";
+    private final String FOLDER_PATH = "/var/lib/invoices/data";
 
 
     public String uploadImageToFileSystem(MultipartFile file, String dateStr) throws IOException {

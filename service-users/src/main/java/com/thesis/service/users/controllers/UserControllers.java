@@ -1,29 +1,44 @@
 package com.thesis.service.users.controllers;
 
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.thesis.service.users.dto.CredentialsDto;
 import com.thesis.service.users.dto.UserDto;
+import com.thesis.service.users.dto.UserRegistrationRequest;
 import com.thesis.service.users.dto.UserWithoutId;
+import com.thesis.service.users.entities.ServiceUser;
 import com.thesis.service.users.services.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
 
 @RequiredArgsConstructor
 @RestController
 @Slf4j
+@CrossOrigin
 public class UserControllers {
 
     private final UserService userService;
 
     @PostMapping("/signIn")
-    public ResponseEntity<UserDto> signIn(@RequestBody CredentialsDto credentialsDto) {
+    public ResponseEntity<Object> signIn(@RequestBody CredentialsDto credentialsDto) {
         log.info("Trying to login {}", credentialsDto.getLogin());
-        return ResponseEntity.ok(userService.signIn(credentialsDto));
+
+        //Add the fingerprint in a hardened cookie - Add cookie manually because
+        //SameSite attribute is not supported by javax.servlet.http.Cookie class
+        UserDto user = userService.signIn(credentialsDto);
+        String fingerprintCookie = "__Secure-Fgp=" + user.getFingerprintCookie()
+                + "; SameSite=Strict; HttpOnly; Secure";
+//        ResponseEntity<Object> response = new ResponseEntity<Object>();
+//        response.addHeader("Set-Cookie", fingerprintCookie);
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.set("Set-Cookie", fingerprintCookie);
+        return ResponseEntity.ok().headers(responseHeaders).body(userService.signIn(credentialsDto));
     }
 
     @PostMapping("/validateToken")
@@ -32,8 +47,21 @@ public class UserControllers {
         return ResponseEntity.ok(userService.validateToken(token));
     }
 
+    @PostMapping("/validateCookieToken")
+    public ResponseEntity<DecodedJWT> validateCookieToken(HttpServletRequest request, @RequestParam String token) {
+        log.info("Trying to validate token {}", token);
+        return ResponseEntity.ok(userService.validateCookieToken(request, token));
+    }
+
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody UserWithoutId userWithoutId){
-        return ResponseEntity.ok("OK");
+    public ResponseEntity<String> register(@RequestBody UserRegistrationRequest request){
+        userService.register(request);
+        return new ResponseEntity<String>("created new user", HttpStatus.CREATED);
+    }
+
+    @PostMapping("/hello")
+    public ResponseEntity<String> hello(@RequestBody UserRegistrationRequest request)
+    {
+        return new ResponseEntity<String>("created new hello", HttpStatus.CREATED);
     }
 }
