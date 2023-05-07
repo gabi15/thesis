@@ -1,7 +1,5 @@
 rootProject.name = 'demo'
 
-include 'customer'
-include 'fraud'
 include 'eureka-server'
 include 'api-gateway'
 include 'invoice'

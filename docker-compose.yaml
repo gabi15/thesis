@@ -61,9 +61,20 @@ services:
     environment:
       - "SPRING_PROFILES_ACTIVE=dev"
     ports:
-      - "8080:8080"
+      - "9090:9090"
     depends_on:
       - eureka-server
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:18.0.2
+    command:
+      - start-dev
+      - --import-realm
+    ports:
+      - "8080:8080"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
 
 volumes:
   invoices:
