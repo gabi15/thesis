@@ -2,7 +2,9 @@ package com.thesis.invoice.service;
 
 import com.thesis.invoice.common.Message;
 import com.thesis.invoice.entities.FileData;
+import com.thesis.invoice.entities.FileDataImage;
 import com.thesis.invoice.entities.InvoiceUpdateForm;
+import com.thesis.invoice.exceptions.AppException;
 import com.thesis.invoice.repositories.FileDataRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,7 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -25,32 +28,52 @@ import java.util.Optional;
 public class InvoiceService {
 
     private final FileDataRepository fileDataRepository;
-    private final String FOLDER_PATH = "/var/lib/invoices/data";
+    //    private final String FOLDER_PATH = "/var/lib/invoices/data";
+    private final String FOLDER_PATH = "C:/Users/Gabrysia/Invoices/";
 
-
-    public String uploadImageToFileSystem(MultipartFile file, String dateStr) throws IOException {
-        String filePath = FOLDER_PATH + file.getOriginalFilename();
-        Date date=Date.valueOf(dateStr);
+    public String uploadImageToFileSystem(MultipartFile file, String dateStr, String userId) throws IOException {
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || fileName.isEmpty()) {
+            throw new AppException("File name is empty", HttpStatus.BAD_REQUEST);
+        }
+        boolean fileAlreadyExists = fileDataRepository.existsByName(fileName);
+        if(fileAlreadyExists){
+            throw new AppException("File with this name already exists", HttpStatus.BAD_REQUEST);
+        }
+        Date date = Date.valueOf(dateStr);
         FileData fileData = fileDataRepository.save(FileData.builder().name(file.getOriginalFilename())
-                        .type(file.getOriginalFilename())
-                        .filePath(filePath)
-                        .date(date)
-                        .build());
-
+                .type(file.getContentType())
+                .date(date)
+                .userId(UUID.fromString(userId))
+                .build());
+        String filePath = FOLDER_PATH + fileData.getId();
+        fileData.setFilePath(filePath);
         file.transferTo(new File(filePath));
         return "file uploaded successfully " + filePath;
     }
 
-    public byte[] downloadImageFromFileSystem(String fileName) throws IOException {
-        Optional<FileData> fileData = fileDataRepository.findByName(fileName);
+    public byte[] downloadImageFromFileSystem(Long fileId, String userId) throws IOException {
+        boolean isOwner = isUserFileOwner(fileId, UUID.fromString(userId));
+        if (!isOwner) {
+            throw new AppException("User is not owner of this file", HttpStatus.FORBIDDEN);
+        }
+        Optional<FileData> fileData = fileDataRepository.findById(fileId);
         String filePath = fileData.get().getFilePath();
         byte[] images = Files.readAllBytes(new File(filePath).toPath());
         return images;
     }
 
+    public boolean isUserFileOwner(Long fileId, UUID userId) {
+        Optional<FileData> fileData = fileDataRepository.findById(fileId);
+        if (fileData.isPresent()) {
+            return fileData.get().getUserId().equals(userId);
+        }
+        return false;
+    }
+
     public byte[] downloadImageFromFileSystemByDate(String date1, String date2) throws IOException {
-        List<FileData> fileData = fileDataRepository.findFileDataByDateBetween(Date.valueOf(date1),Date.valueOf(date2));
-        if(fileData.isEmpty()){
+        List<FileData> fileData = fileDataRepository.findFileDataByDateBetween(Date.valueOf(date1), Date.valueOf(date2));
+        if (fileData.isEmpty()) {
             return null;
         }
         String filePath = fileData.get(0).getFilePath();
@@ -59,30 +82,30 @@ public class InvoiceService {
         return image;
     }
 
-    public String updateInvoiceProperties(Long invoiceId, InvoiceUpdateForm invoiceUpdateForm){
+    public String updateInvoiceProperties(Long invoiceId, InvoiceUpdateForm invoiceUpdateForm) {
         Optional<FileData> fileData = fileDataRepository.findById(invoiceId);
-        if(fileData.isEmpty()){
+        if (fileData.isEmpty()) {
             return "no such invoice";
         }
         FileData invoice = fileData.get();
         Date date = invoiceUpdateForm.getDate();
         String description = invoiceUpdateForm.getDescription();
-        if (date!=null){
+        if (date != null) {
             invoice.setDate(date);
         }
-        if (description!=null){
+        if (description != null) {
             invoice.setDescription(description);
         }
         return "Successfully updated invoice";
     }
 
-    public List<FileData> getAllInvoices(){
+    public List<FileData> getAllInvoices() {
         return fileDataRepository.findAll();
     }
 
-    public Message deleteInvoice(Long id){
+    public Message deleteInvoice(Long id) {
         Optional<FileData> invoice = fileDataRepository.findById(id);
-        if(invoice.isEmpty()){
+        if (invoice.isEmpty()) {
             return Message.builder().message("resource not found").status(HttpStatus.NOT_FOUND).build();
         }
         String filePath = invoice.get().getFilePath();

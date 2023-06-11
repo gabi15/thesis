@@ -9,5 +9,7 @@ import java.util.Optional;
 
 public interface FileDataRepository extends JpaRepository<FileData, Long> {
     Optional<FileData> findByName(String name);
+    Optional<FileData> findFileDataById(Long id);
     List<FileData> findFileDataByDateBetween(Date date1, Date date2);
+    boolean existsByName(String name);
 }
