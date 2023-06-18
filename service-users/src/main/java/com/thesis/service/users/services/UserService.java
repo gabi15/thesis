@@ -2,6 +2,7 @@ package com.thesis.service.users.services;
 
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.thesis.service.users.dto.CredentialsDto;
 import com.thesis.service.users.dto.UserDto;
@@ -106,7 +107,13 @@ public class UserService {
                 .withClaim("userFingerprint", userFingerprintHash)
                 .build();
 
-//Verify the token, if the verification fail then an exception is thrown
+        //Verify the token, if the verification fail then an exception is thrown
+        try{
+            verifier.verify(token);
+        }
+        catch(JWTVerificationException e){
+            throw new AppException(e.getMessage(), HttpStatus.UNAUTHORIZED);
+        }
         DecodedJWT decodedToken = verifier.verify(token);
         return decodedToken;
     }
@@ -137,11 +144,6 @@ public class UserService {
 
     private String createToken(ServiceUser user, String userFingerprint) {
         String userLogin = user.getLogin();
-//        Claims claims = Jwts.claims().setSubject(userLogin);
-//
-//        Date now = new Date();
-//        Date validity = new Date(now.getTime() + 3600000); // 1 hour
-
 
         //Compute a SHA256 hash of the fingerprint in order to store the
         //fingerprint hash (instead of the raw value) in the token
@@ -178,12 +180,6 @@ public class UserService {
                 .withHeader(headerClaims)
                 .sign(Algorithm.HMAC256(this.keyHMAC));
 
-//        return Jwts.builder()
-//                .setClaims(claims)
-//                .setIssuedAt(now)
-//                .setExpiration(validity)
-//                .signWith(SignatureAlgorithm.HS256, secretKey)
-//                .compact();
         return token;
     }
 

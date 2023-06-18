@@ -7,6 +7,7 @@ import com.thesis.service.users.dto.UserDto;
 import com.thesis.service.users.dto.UserRegistrationRequest;
 import com.thesis.service.users.dto.UserWithoutId;
 import com.thesis.service.users.entities.ServiceUser;
+import com.thesis.service.users.exceptions.AppException;
 import com.thesis.service.users.services.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,13 @@ public class UserControllers {
 
         //Add the fingerprint in a hardened cookie - Add cookie manually because
         //SameSite attribute is not supported by javax.servlet.http.Cookie class
-        UserDto user = userService.signIn(credentialsDto);
+        UserDto user;
+        try {
+            user = userService.signIn(credentialsDto);
+        }
+        catch(AppException e){
+            return new ResponseEntity<>(e.getMessage(), e.getStatus());
+        }
         String fingerprintCookie = "__FakeSecure-Fgp=" + user.getFingerprintCookie()
                 + ";Path=/; SameSite=Strict; HttpOnly; Secure";
         HttpHeaders responseHeaders = new HttpHeaders();
@@ -40,16 +47,17 @@ public class UserControllers {
         return ResponseEntity.ok().headers(responseHeaders).body(user);
     }
 
-    @PostMapping("/validateToken")
-    public ResponseEntity<UserDto> signIn(@RequestParam String token) {
-        log.info("Trying to validate token {}", token);
-        return ResponseEntity.ok(userService.validateToken(token));
-    }
-
     @PostMapping("/validateCookieToken")
-    public ResponseEntity<DecodedJWT> validateCookieToken(HttpServletRequest request, @RequestParam String token) {
+    public ResponseEntity<Object> validateCookieToken(HttpServletRequest request, @RequestParam String token) {
         log.info("Trying to validate token {}", token);
-        return ResponseEntity.ok(userService.validateCookieToken(request, token));
+        DecodedJWT decodedJWT;
+        try{
+            decodedJWT = userService.validateCookieToken(request, token);
+        }
+        catch (AppException e){
+            return new ResponseEntity<>(e.getMessage(), e.getStatus());
+        }
+        return new ResponseEntity<>(decodedJWT, HttpStatus.OK);
     }
 
     @PostMapping("/register")

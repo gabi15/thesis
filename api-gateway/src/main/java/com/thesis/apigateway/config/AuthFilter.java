@@ -4,12 +4,20 @@ import com.thesis.apigateway.dto.UserDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.nio.charset.StandardCharsets;
 
 @Component
 @Slf4j
@@ -22,11 +30,20 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
         this.webClientBuilder = webClientBuilder;
     }
 
+
+    private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus)  {
+        ServerHttpResponse response = exchange.getResponse();
+        response.setStatusCode(httpStatus);
+        byte[] bytes = err.getBytes(StandardCharsets.UTF_8);
+        DataBuffer buffer = response.bufferFactory().wrap(bytes);
+        return response.writeWith(Flux.just(buffer));
+    }
+
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                throw new RuntimeException("Missing authorization information");
+                return this.onError(exchange, "You need to be authorized", HttpStatus.UNAUTHORIZED);
             }
 
             String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
@@ -35,7 +52,9 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             log.info("cookies");
             MultiValueMap<String, HttpCookie> AllCookies = exchange.getRequest().getCookies();
             HttpCookie secureFgpCookie = AllCookies.getFirst("__FakeSecure-Fgp");
-            assert secureFgpCookie != null;
+            if(secureFgpCookie == null){
+                return this.onError(exchange, "No fingerprint cookie found", HttpStatus.UNAUTHORIZED);
+            }
             String cookieValue = secureFgpCookie.getValue();
 
             log.info(String.valueOf(exchange.getRequest().getCookies()));
@@ -48,7 +67,7 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             String[] parts = authHeader.split(" ");
 
             if (parts.length != 2 || !"Bearer".equals(parts[0])) {
-                throw new RuntimeException("Incorrect authorization structure");
+                return this.onError(exchange, "Incorrect authentication structure", HttpStatus.UNAUTHORIZED);
             }
 
             return webClientBuilder.build()
