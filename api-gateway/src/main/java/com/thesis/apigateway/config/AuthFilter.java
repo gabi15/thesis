@@ -34,14 +34,14 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             log.info(authHeader);
             log.info("cookies");
             MultiValueMap<String, HttpCookie> AllCookies = exchange.getRequest().getCookies();
-            HttpCookie secureFgpCookie = AllCookies.getFirst("__Secure-Fgp");
+            HttpCookie secureFgpCookie = AllCookies.getFirst("__FakeSecure-Fgp");
             assert secureFgpCookie != null;
             String cookieValue = secureFgpCookie.getValue();
 
             log.info(String.valueOf(exchange.getRequest().getCookies()));
 
             MultiValueMap<String, String> cookiesToPass = new LinkedMultiValueMap<String, String>();
-            cookiesToPass.add("__Secure-Fgp", cookieValue);
+            cookiesToPass.add("__FakeSecure-Fgp", cookieValue);
             log.info("cookies to pass");
             log.info(String.valueOf(cookiesToPass));
 

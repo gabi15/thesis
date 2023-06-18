@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 @RestController
 @Slf4j
 @CrossOrigin
+@RequestMapping("/users")
 public class UserControllers {
 
     private final UserService userService;
@@ -32,13 +33,11 @@ public class UserControllers {
         //Add the fingerprint in a hardened cookie - Add cookie manually because
         //SameSite attribute is not supported by javax.servlet.http.Cookie class
         UserDto user = userService.signIn(credentialsDto);
-        String fingerprintCookie = "__Secure-Fgp=" + user.getFingerprintCookie()
-                + "; SameSite=Strict; HttpOnly; Secure";
-//        ResponseEntity<Object> response = new ResponseEntity<Object>();
-//        response.addHeader("Set-Cookie", fingerprintCookie);
+        String fingerprintCookie = "__FakeSecure-Fgp=" + user.getFingerprintCookie()
+                + ";Path=/; SameSite=Strict; HttpOnly; Secure";
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.set("Set-Cookie", fingerprintCookie);
-        return ResponseEntity.ok().headers(responseHeaders).body(userService.signIn(credentialsDto));
+        return ResponseEntity.ok().headers(responseHeaders).body(user);
     }
 
     @PostMapping("/validateToken")

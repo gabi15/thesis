@@ -18,6 +18,7 @@ import java.util.NoSuchElementException;
 @RestController
 @RequestMapping("/invoice")
 @RequiredArgsConstructor
+@CrossOrigin
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
