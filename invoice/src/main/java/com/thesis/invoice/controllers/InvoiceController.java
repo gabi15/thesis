@@ -3,8 +3,10 @@ package com.thesis.invoice.controllers;
 import com.thesis.invoice.common.Message;
 import com.thesis.invoice.entities.FileData;
 import com.thesis.invoice.entities.InvoiceUpdateForm;
+import com.thesis.invoice.exceptions.AppException;
 import com.thesis.invoice.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,14 +21,20 @@ import java.util.NoSuchElementException;
 @RequestMapping("/invoice")
 @RequiredArgsConstructor
 @CrossOrigin
+@Slf4j
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
 
 
     @PostMapping("/fileSystem")
-    public ResponseEntity<?> uploadImageToFIleSystem(@RequestParam("image") MultipartFile file, @RequestParam("date") String date) throws IOException {
-        String uploadImage = invoiceService.uploadImageToFileSystem(file, date);
+    public ResponseEntity<?> uploadImageToFIleSystem(@RequestParam("image") MultipartFile file, @RequestParam("date") String date, @RequestHeader (name="X-auth-user-id") String userId) throws IOException {
+        String uploadImage;
+        try {
+            uploadImage = invoiceService.uploadImageToFileSystem(file, date, userId);
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getStatus()).body(e.getMessage());
+        }
         return ResponseEntity.status(HttpStatus.OK)
                 .body(uploadImage);
     }
@@ -39,19 +47,33 @@ public class InvoiceController {
     }
 
 
-    @GetMapping("/fileSystem/{fileName}")
-    public ResponseEntity<?> downloadImageFromFileSystem(@PathVariable String fileName) throws IOException {
-        byte[] imageData;
+//    @GetMapping("/fileSystem/{fileName}")
+//    public ResponseEntity<?> downloadImageFromFileSystem(@PathVariable String fileName) throws IOException {
+//        byte[] imageData;
+//        try {
+//            imageData = invoiceService.downloadImageFromFileSystem(fileName);
+//        }
+//        catch(NoSuchElementException e){
+//            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+//        }
+//        return ResponseEntity.status(HttpStatus.OK)
+//                .contentType(MediaType.valueOf("image/png"))
+//                .body(imageData);
+//    }
+
+    @GetMapping("/fileSystem/{id}")
+    public ResponseEntity<?> getInvoiceImageById(@PathVariable Long id, @RequestHeader (name="X-auth-user-id") String userId) {
+        byte[] image;
         try {
-            imageData = invoiceService.downloadImageFromFileSystem(fileName);
-        }
-        catch(NoSuchElementException e){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            image = invoiceService.downloadImageFromFileSystem(id, userId);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("something went wrong with downloading the files");
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getStatus()).body(e.getMessage());
         }
         return ResponseEntity.status(HttpStatus.OK)
-                .contentType(MediaType.valueOf("image/png"))
-                .body(imageData);
-
+//                .contentType(MediaType.valueOf(fileDataImage.getFileData().getType()))
+                .body(image);
     }
 
     @PutMapping(path = "/fileSystem/{invoiceId}")
@@ -73,13 +95,14 @@ public class InvoiceController {
     }
 
     @DeleteMapping("/fileSystem/{invoiceId}")
-    public ResponseEntity<String> deleteInvoiceFromFileSystem(@PathVariable Long invoiceId){
-            Message message = invoiceService.deleteInvoice(invoiceId);
+    public ResponseEntity<String> deleteInvoiceFromFileSystem(@PathVariable Long invoiceId, @RequestHeader (name="X-auth-user-id") String userId){
+            Message message = invoiceService.deleteInvoice(invoiceId, userId);
             return new ResponseEntity<>(message.getMessage(), message.getStatus());
     }
 
-    @GetMapping("/")
-    public String test(){
+    @GetMapping("/test1/test2")
+    public String test(@RequestHeader (name="X-auth-user-id") String userId){
+        log.info("Headers: {}", userId);
         return "Hello";
     }
 

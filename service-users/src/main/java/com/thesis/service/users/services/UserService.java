@@ -71,7 +71,7 @@ public class UserService {
         throw new AppException("Invalid password", HttpStatus.BAD_REQUEST);
     }
 
-    public DecodedJWT validateCookieToken(HttpServletRequest request, String token){
+    public ServiceUser validateCookieToken(HttpServletRequest request, String token){
         //Retrieve the user fingerprint from the dedicated cookie
         String userFingerprint = null;
         if (request.getCookies() != null && request.getCookies().length > 0) {
@@ -115,16 +115,7 @@ public class UserService {
             throw new AppException(e.getMessage(), HttpStatus.UNAUTHORIZED);
         }
         DecodedJWT decodedToken = verifier.verify(token);
-        return decodedToken;
-    }
-
-    public UserDto validateToken(String token) {
-
-        String login = Jwts.parser()
-                .setSigningKey(secretKey)
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+        String login = decodedToken.getSubject();
         Optional<ServiceUser> userOptional = userRepository.findByLogin(login);
 
         if (userOptional.isEmpty()) {
@@ -132,9 +123,9 @@ public class UserService {
         }
 
         ServiceUser user = userOptional.get();
-        String fingerprintCookie = createUserFingerprint();
-        return userMapper.toUserDto(user, createToken(user, fingerprintCookie), fingerprintCookie);
+        return user;
     }
+
 
     private String createUserFingerprint() {
         byte[] randomFgp = new byte[50];
@@ -188,7 +179,7 @@ public class UserService {
                 .login(request.getLogin())
                 .build();
         if (userRepository.existsServiceUserByLogin(request.getLogin())) {
-            throw new AppException("User with login " + request.getLogin() + "already exists", HttpStatus.CONFLICT);
+            throw new AppException("User with login " + request.getLogin() + " already exists", HttpStatus.CONFLICT);
         }
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         userRepository.save(user);

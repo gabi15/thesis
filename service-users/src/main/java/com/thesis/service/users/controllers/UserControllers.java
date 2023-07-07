@@ -1,11 +1,8 @@
 package com.thesis.service.users.controllers;
 
-
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.thesis.service.users.dto.CredentialsDto;
 import com.thesis.service.users.dto.UserDto;
 import com.thesis.service.users.dto.UserRegistrationRequest;
-import com.thesis.service.users.dto.UserWithoutId;
 import com.thesis.service.users.entities.ServiceUser;
 import com.thesis.service.users.exceptions.AppException;
 import com.thesis.service.users.services.UserService;
@@ -50,19 +47,24 @@ public class UserControllers {
     @PostMapping("/validateCookieToken")
     public ResponseEntity<Object> validateCookieToken(HttpServletRequest request, @RequestParam String token) {
         log.info("Trying to validate token {}", token);
-        DecodedJWT decodedJWT;
+        ServiceUser user;
         try{
-            decodedJWT = userService.validateCookieToken(request, token);
+            user = userService.validateCookieToken(request, token);
         }
         catch (AppException e){
             return new ResponseEntity<>(e.getMessage(), e.getStatus());
         }
-        return new ResponseEntity<>(decodedJWT, HttpStatus.OK);
+        return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody UserRegistrationRequest request){
-        userService.register(request);
+        try{
+            userService.register(request);
+        }
+        catch (AppException e){
+            return new ResponseEntity<>(e.getMessage(), e.getStatus());
+        }
         return new ResponseEntity<String>("created new user", HttpStatus.CREATED);
     }
 

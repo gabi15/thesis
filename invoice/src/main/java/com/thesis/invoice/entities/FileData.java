@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.sql.Date;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -23,4 +24,5 @@ public class FileData {
     private String filePath;
     private Date date;
     private String description;
+    private UUID userId;
 }

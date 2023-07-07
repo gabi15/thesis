@@ -76,6 +76,8 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                     .cookies(cookies -> cookies.addAll(cookiesToPass))
                     .retrieve().bodyToMono(UserDto.class)
                     .map(userDto -> {
+                        log.info("userDto");
+                        log.info(userDto.toString());
                         exchange.getRequest()
                                 .mutate()
                                 .header("X-auth-user-id", String.valueOf(userDto.getId()));
