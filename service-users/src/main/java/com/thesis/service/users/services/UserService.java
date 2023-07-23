@@ -90,14 +90,14 @@ public class UserService {
             digest = MessageDigest.getInstance("SHA-256");
         }
         catch(NoSuchAlgorithmException e){
-            System.out.println("dupa");
+            System.out.println("No such algorithm");
         }
         byte[] userFingerprintDigest=null;
         try {
             userFingerprintDigest = digest.digest(userFingerprint.getBytes("utf-8"));
         }
         catch(UnsupportedEncodingException e){
-            System.out.println("dupa");
+            System.out.println("unsupported encoding");
         }
         String userFingerprintHash = DatatypeConverter.printHexBinary(userFingerprintDigest);
 
