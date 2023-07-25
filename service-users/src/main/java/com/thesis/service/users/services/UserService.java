@@ -2,6 +2,7 @@ package com.thesis.service.users.services;
 
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.thesis.service.users.dto.CredentialsDto;
@@ -48,16 +49,11 @@ public class UserService {
 
     public ServiceUser validateToken(String token) {
 
-        //Create a verification context for the token
-        JWTVerifier verifier = JWT.require(Algorithm.HMAC256(secretKey))
-                .withIssuer("invoice_server")
-                .build();
-
-        //Verify the token, if the verification fail then an exception is thrown
+        //decode the token
         DecodedJWT decodedToken;
         try {
-            decodedToken = verifier.verify(token);
-        } catch (JWTVerificationException e) {
+            decodedToken= JWT.decode(token);
+        } catch (JWTDecodeException e) {
             throw new AppException(e.getMessage(), HttpStatus.UNAUTHORIZED);
         }
         String login = decodedToken.getSubject();
