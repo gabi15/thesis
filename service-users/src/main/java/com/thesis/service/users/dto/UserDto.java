@@ -16,5 +16,4 @@ public class UserDto {
     private UUID id;
     private String login;
     private String token;
-    private String fingerprintCookie;
 }

@@ -49,20 +49,6 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
             String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
             log.info("bearer");
             log.info(authHeader);
-            log.info("cookies");
-            MultiValueMap<String, HttpCookie> AllCookies = exchange.getRequest().getCookies();
-            HttpCookie secureFgpCookie = AllCookies.getFirst("__FakeSecure-Fgp");
-            if(secureFgpCookie == null){
-                return this.onError(exchange, "No fingerprint cookie found", HttpStatus.UNAUTHORIZED);
-            }
-            String cookieValue = secureFgpCookie.getValue();
-
-            log.info(String.valueOf(exchange.getRequest().getCookies()));
-
-            MultiValueMap<String, String> cookiesToPass = new LinkedMultiValueMap<String, String>();
-            cookiesToPass.add("__FakeSecure-Fgp", cookieValue);
-            log.info("cookies to pass");
-            log.info(String.valueOf(cookiesToPass));
 
             String[] parts = authHeader.split(" ");
 
@@ -72,8 +58,7 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
 
             return webClientBuilder.build()
                     .post()
-                    .uri("http://service-users/users/validateCookieToken?token=" + parts[1])
-                    .cookies(cookies -> cookies.addAll(cookiesToPass))
+                    .uri("http://service-users/users/validateToken?token=" + parts[1])
                     .retrieve().bodyToMono(UserDto.class)
                     .map(userDto -> {
                         log.info("userDto");

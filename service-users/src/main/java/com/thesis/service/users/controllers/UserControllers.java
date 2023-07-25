@@ -37,19 +37,16 @@ public class UserControllers {
         catch(AppException e){
             return new ResponseEntity<>(e.getMessage(), e.getStatus());
         }
-        String fingerprintCookie = "__FakeSecure-Fgp=" + user.getFingerprintCookie()
-                + ";Path=/; SameSite=Strict; HttpOnly; Secure";
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.set("Set-Cookie", fingerprintCookie);
-        return ResponseEntity.ok().headers(responseHeaders).body(user);
+
+        return ResponseEntity.ok().body(user);
     }
 
-    @PostMapping("/validateCookieToken")
-    public ResponseEntity<Object> validateCookieToken(HttpServletRequest request, @RequestParam String token) {
+    @PostMapping("/validateToken")
+    public ResponseEntity<Object> validateToken(@RequestParam String token) {
         log.info("Trying to validate token {}", token);
         ServiceUser user;
         try{
-            user = userService.validateCookieToken(request, token);
+            user = userService.validateToken(token);
         }
         catch (AppException e){
             return new ResponseEntity<>(e.getMessage(), e.getStatus());
