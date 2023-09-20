@@ -99,8 +99,8 @@ public class InvoiceService {
         return "Successfully updated invoice";
     }
 
-    public List<FileData> getAllInvoices(){
-        return fileDataRepository.findAll();
+    public List<FileData> getAllInvoices(String userId){
+        return fileDataRepository.findFileDataByUserId(UUID.fromString(userId));
     }
 
     public Message deleteInvoice(Long id, String userId){

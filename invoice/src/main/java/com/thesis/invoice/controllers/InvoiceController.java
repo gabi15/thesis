@@ -40,8 +40,8 @@ public class InvoiceController {
     }
 
     @GetMapping("/fileSystem")
-    public ResponseEntity<?> getAllInvoicesDetails() {
-        List<FileData> invoices = invoiceService.getAllInvoices();
+    public ResponseEntity<?> getAllInvoicesDetails(@RequestHeader (name="X-auth-user-id") String userId) {
+        List<FileData> invoices = invoiceService.getAllInvoices(userId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(invoices);
     }
